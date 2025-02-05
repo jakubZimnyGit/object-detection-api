@@ -1,7 +1,7 @@
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import FileResponse
 import os
-from app.utils import load_and_convert_image, detect_and_annotate_objects, save_annotated_image
+from app.utils import load_and_convert_image, detect_and_annotate_objects, save_annotated_image, validate_image_file
 from app.model import load_model
 
 app = FastAPI()
@@ -12,6 +12,9 @@ os.makedirs("static", exist_ok=True)
 @app.post("/detect")
 async def object_detect(file: UploadFile = File(...)):
     contents = await file.read()
+
+    validate_image_file(contents, file.content_type)
+    
     image_cv = load_and_convert_image(contents)
     
     image_cv, objects_info = detect_and_annotate_objects(image_cv, model)

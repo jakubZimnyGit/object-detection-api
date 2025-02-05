@@ -2,6 +2,27 @@ import numpy as np
 import cv2
 from PIL import Image
 from io import BytesIO
+from fastapi import HTTPException
+
+def validate_image_file(file_content: bytes, content_type: str):
+    """
+    Funkcja do walidacji, czy plik jest obrazem.
+
+    :param file_content: Zawartość pliku w formie bajtów.
+    :param content_type: Typ MIME pliku.
+    :raises HTTPException: Jeśli plik nie jest obrazem lub ma nieprawidłowy format.
+    """
+    if not content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File is not an image")
+    
+    try:
+        # Próba otwarcia pliku jako obraz
+        from PIL import Image
+        image = Image.open(BytesIO(file_content))
+        image.verify()  # Upewniamy się, że jest to poprawny obraz
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid image format")
+    
 
 def load_and_convert_image(file_contents: bytes) -> np.ndarray:
     """
