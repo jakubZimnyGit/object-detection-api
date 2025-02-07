@@ -53,6 +53,35 @@ Now your application should be running locally at:
 - **Backend**: `http://127.0.0.1:8000`
 - **Frontend**: `http://127.0.0.1:5173`
 
+### Docker Setup 🐳
+
+You can also run this application using Docker. The project includes Dockerfiles for both the frontend and backend. 
+
+#### 1. Build the Docker images:
+
+- **Backend**:
+    ```bash
+    docker build -t object-detection-backend ./backend
+    ```
+
+- **Frontend**:
+    ```bash
+    docker build -t object-detection-frontend ./frontend
+    ```
+
+#### 2. Run the containers:
+
+To run the application with Docker, you can use `docker-compose`. Here's how to do it:
+
+1. **Build the images and start the containers**:
+    ```bash
+    docker-compose up --build
+    ```
+
+2. The backend will run on `http://localhost:8000` and the frontend on `http://localhost:5173`.
+
+Now your application should be running inside Docker containers.
+
 ### API Endpoints 📡:
 
 - **POST /detect**: Upload an image for object detection 🖼️➡️🔍
