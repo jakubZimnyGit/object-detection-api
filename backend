@@ -1,0 +1,207 @@
+[1mdiff --git a/README.md b/README.md[m
+[1mdeleted file mode 100644[m
+[1mindex a38c699..0000000[m
+[1m--- a/README.md[m
+[1m+++ /dev/null[m
+[36m@@ -1 +0,0 @@[m
+[31m-# object-detection-api[m
+\ No newline at end of file[m
+[1mdiff --git a/backend/app/__init__.py b/backend/app/__init__.py[m
+[1mdeleted file mode 100644[m
+[1mindex e69de29..0000000[m
+[1mdiff --git a/backend/app/main.py b/backend/app/main.py[m
+[1mdeleted file mode 100644[m
+[1mindex 136778e..0000000[m
+[1m--- a/backend/app/main.py[m
+[1m+++ /dev/null[m
+[36m@@ -1,41 +0,0 @@[m
+[31m-from fastapi import FastAPI, File, UploadFile[m
+[31m-from fastapi.responses import FileResponse, StreamingResponse[m
+[31m-import io[m
+[31m-import os[m
+[31m-from app.utils import load_and_convert_image, detect_and_annotate_objects, save_annotated_image, validate_image_file[m
+[31m-from app.model import load_model[m
+[31m-from fastapi.middleware.cors import CORSMiddleware[m
+[31m-from fastapi.staticfiles import StaticFiles[m
+[31m-[m
+[31m-app = FastAPI()[m
+[31m-[m
+[31m-app.add_middleware([m
+[31m-    CORSMiddleware,[m
+[31m-    allow_origins=["http://localhost:5173"],  [m
+[31m-    allow_credentials=True,[m
+[31m-    allow_methods=["*"],[m
+[31m-    allow_headers=["*"],[m
+[31m-)[m
+[31m-[m
+[31m-app.mount("/static", StaticFiles(directory="app/static"), name="static")[m
+[31m-[m
+[31m-model = load_model("yolov8n.pt")[m
+[31m-os.makedirs("app/static", exist_ok=True)[m
+[31m-[m
+[31m-@app.post("/detect")[m
+[31m-async def object_detect(file: UploadFile = File(...)):[m
+[31m-    contents = await file.read()[m
+[31m-[m
+[31m-    validate_image_file(contents, file.content_type)[m
+[31m-    [m
+[31m-    image_cv = load_and_convert_image(contents)[m
+[31m-    [m
+[31m-    image_cv, objects_info = detect_and_annotate_objects(image_cv, model)[m
+[31m-    [m
+[31m-    output_path = save_annotated_image(image_cv)[m
+[31m-    image_url = f"/static/result.jpg"[m
+[31m-[m
+[31m-    return {[m
+[31m-        "image": image_url,  # Zwracamy URL obrazu[m
+[31m-        "objects_info": objects_info[m
+[31m-    }[m
+[1mdiff --git a/backend/app/model.py b/backend/app/model.py[m
+[1mdeleted file mode 100644[m
+[1mindex 5feb9da..0000000[m
+[1m--- a/backend/app/model.py[m
+[1m+++ /dev/null[m
+[36m@@ -1,5 +0,0 @@[m
+[31m-from ultralytics import YOLO[m
+[31m-[m
+[31m-def load_model(model_path="yolov8n.pt"):[m
+[31m-    model = YOLO(model_path)[m
+[31m-    return model[m
+\ No newline at end of file[m
+[1mdiff --git a/backend/app/static/result.jpg b/backend/app/static/result.jpg[m
+[1mdeleted file mode 100644[m
+[1mindex 476c7a4..0000000[m
+Binary files a/backend/app/static/result.jpg and /dev/null differ
+[1mdiff --git a/backend/app/utils.py b/backend/app/utils.py[m
+[1mdeleted file mode 100644[m
+[1mindex 861ea7a..0000000[m
+[1m--- a/backend/app/utils.py[m
+[1m+++ /dev/null[m
+[36m@@ -1,83 +0,0 @@[m
+[31m-import numpy as np[m
+[31m-import cv2[m
+[31m-from PIL import Image[m
+[31m-import io[m
+[31m-from io import BytesIO[m
+[31m-from fastapi import HTTPException[m
+[31m-[m
+[31m-def validate_image_file(file_contents: bytes, content_type: str):[m
+[31m-    """[m
+[31m-    Funkcja do walidacji, czy plik jest obrazem.[m
+[31m-[m
+[31m-    :param file_content: Zawartość pliku w formie bajtów.[m
+[31m-    :param content_type: Typ MIME pliku.[m
+[31m-    :raises HTTPException: Jeśli plik nie jest obrazem lub ma nieprawidłowy format.[m
+[31m-    """[m
+[31m-    if 'image' not in content_type:[m
+[31m-        raise HTTPException(status_code=400, detail="Invalid file type. Please upload an image.")[m
+[31m-    [m
+[31m-    try:[m
+[31m-        Image.open(io.BytesIO(file_contents))[m
+[31m-    except Exception:[m
+[31m-        raise HTTPException(status_code=400, detail="Unable to identify image. Invalid file format.")[m
+[31m-    [m
+[31m-[m
+[31m-def load_and_convert_image(file_contents: bytes) -> np.ndarray:[m
+[31m-    """[m
+[31m-    Funkcja ładuje obraz z danych binarnych (np. z uploadu) i konwertuje go[m
+[31m-    na format OpenCV.[m
+[31m-    [m
+[31m-    :param file_contents: Zawartość pliku obrazu w postaci bajtów.[m
+[31m-    :return: Obraz w formacie OpenCV (np. BGR).[m
+[31m-    """[m
+[31m-    image = Image.open(BytesIO(file_contents))[m
+[31m-    image_cv = np.array(image)[m
+[31m-    image_cv = cv2.cvtColor(image_cv, cv2.COLOR_RGB2BGR)[m
+[31m-    return image_cv[m
+[31m-[m
+[31m-[m
+[31m-def detect_and_annotate_objects(image_cv: np.ndarray, model) -> tuple:[m
+[31m-    """[m
+[31m-    Funkcja wykonuje detekcję obiektów na obrazie i rysuje na nim ramki[m
+[31m-    oraz zwraca dane o wykrytych obiektach.[m
+[31m-    [m
+[31m-    :param image_cv: Obraz w formacie OpenCV.[m
+[31m-    :param model: Załadowany model detekcji obiektów (np. YOLO).[m
+[31m-    :return: Zaktualizowany obraz oraz lista informacji o wykrytych obiektach.[m
+[31m-    """[m
+[31m-    results = model(image_cv)[m
+[31m-    objects_info = [][m
+[31m-    [m
+[31m-    for result in results:[m
+[31m-        for box in result.boxes:[m
+[31m-            x1, y1, x2, y2 = map(int, box.xyxy[0])[m
+[31m-            conf = box.conf[0] if box.conf else 0.0[m
+[31m-            label = result.names[int(box.cls[0])][m
+[31m-            [m
+[31m-            cv2.rectangle(image_cv, (x1, y1), (x2, y2), (0, 255, 0), 2)[m
+[31m-            cv2.putText(image_cv, f"{label} {conf:.2f}", (x1, y1 - 10),[m
+[31m-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)[m
+[31m-[m
+[31m-            objects_info.append({[m
+[31m-                "label": label,[m
+[31m-                "confidence": conf,[m
+[31m-                "bounding_box": {[m
+[31m-                    "x1": x1,[m
+[31m-                    "y1": y1,[m
+[31m-                    "x2": x2,[m
+[31m-                    "y2": y2[m
+[31m-                }[m
+[31m-            })[m
+[31m-    return image_cv, objects_info[m
+[31m-[m
+[31m-[m
+[31m-def save_annotated_image(image_cv: np.ndarray, output_path: str = "app/static/result.jpg") -> str:[m
+[31m-    """[m
+[31m-    Funkcja zapisuje zmodyfikowany obraz z naniesionymi ramkami do pliku.[m
+[31m-    [m
+[31m-    :param image_cv: Zmieniony obraz w formacie OpenCV.[m
+[31m-    :param output_path: Ścieżka, gdzie obraz ma zostać zapisany.[m
+[31m-    :return: Ścieżka do zapisanego obrazu.[m
+[31m-    """[m
+[31m-    cv2.imwrite(output_path, image_cv)[m
+[31m-    return output_path[m
+\ No newline at end of file[m
+[1mdiff --git a/backend/pytest.ini b/backend/pytest.ini[m
+[1mdeleted file mode 100644[m
+[1mindex 1999f9c..0000000[m
+[1m--- a/backend/pytest.ini[m
+[1m+++ /dev/null[m
+[36m@@ -1,4 +0,0 @@[m
+[31m-[pytest][m
+[31m-[m
+[31m-markers = asyncio[m
+[31m-asyncio_mode = auto[m
+[1mdiff --git a/backend/requirements.txt b/backend/requirements.txt[m
+[1mdeleted file mode 100644[m
+[1mindex 0795ba9..0000000[m
+Binary files a/backend/requirements.txt and /dev/null differ
+[1mdiff --git a/backend/tests/empty_scene.jpg b/backend/tests/empty_scene.jpg[m
+[1mdeleted file mode 100644[m
+[1mindex f892c24..0000000[m
+Binary files a/backend/tests/empty_scene.jpg and /dev/null differ
+[1mdiff --git a/backend/tests/sample_image.jpg b/backend/tests/sample_image.jpg[m
+[1mdeleted file mode 100644[m
+[1mindex 989dd25..0000000[m
+Binary files a/backend/tests/sample_image.jpg and /dev/null differ
+[1mdiff --git a/backend/tests/test.txt b/backend/tests/test.txt[m
+[1mdeleted file mode 100644[m
+[1mindex e69de29..0000000[m
+[1mdiff --git a/backend/tests/test_main.py b/backend/tests/test_main.py[m
+[1mdeleted file mode 100644[m
+[1mindex 1decb0f..0000000[m
+[1m--- a/backend/tests/test_main.py[m
+[1m+++ /dev/null[m
+[36m@@ -1,34 +0,0 @@[m
+[31m-import sys[m
+[31m-import os[m
+[31m-[m
+[31m-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))[m
+[31m-[m
+[31m-from app.main import app[m
+[31m-from fastapi.testclient import TestClient[m
+[31m-[m
+[31m-client = TestClient(app)[m
+[31m-[m
+[31m-[m
+[31m-def test_detect_objects():
