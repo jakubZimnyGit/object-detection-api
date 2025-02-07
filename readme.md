@@ -61,7 +61,7 @@ Now your application should be running locally at:
   - **Response**:
     - Detected objects with their labels and confidence scores 🏷️✅
 
-### Example Example 🌟:
+### Example 🌟:
 
 To detect objects in an image, send a POST request to `/detect` with an image file.
 
